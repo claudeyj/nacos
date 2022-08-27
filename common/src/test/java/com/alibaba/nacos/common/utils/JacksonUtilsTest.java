@@ -16,9 +16,7 @@
 
 package com.alibaba.nacos.common.utils;
 
-import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.exception.runtime.NacosSerializationException;
-import com.alibaba.nacos.common.model.RestResult;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -33,10 +31,8 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,18 +52,18 @@ public class JacksonUtilsTest {
                 JacksonUtils.toJson(Collections.singletonList(Collections.singletonMap("key", "value")))
         );
         Assert.assertEquals(
-                "{\"aLong\":0,\"aInteger\":1,\"aBoolean\":false}",
+                JacksonUtils.sortJsonString("{\"aLong\":0,\"aInteger\":1,\"aBoolean\":false}"),
                 JacksonUtils.toJson(new TestOfAtomicObject())
         );
         Assert.assertEquals("{\"date\":1626192000000}", JacksonUtils.toJson(new TestOfDate()));
         // only public
         Assert.assertEquals("{\"publicAccessModifier\":\"public\"}", JacksonUtils.toJson(new TestOfAccessModifier()));
         // getter is also recognized
-        Assert.assertEquals("{\"value\":\"value\",\"key\":\"key\"}", JacksonUtils.toJson(new TestOfGetter()));
+        Assert.assertEquals(JacksonUtils.sortJsonString("{\"value\":\"value\",\"key\":\"key\"}"), JacksonUtils.toJson(new TestOfGetter()));
         // annotation available
         Assert.assertEquals(
-                "{\"@type\":\"JacksonUtilsTest$TestOfAnnotationSub\",\"date\":\"2021-07-14\",\"subField\":\"subField\"," 
-                        + "\"camelCase\":\"value\"}", 
+                JacksonUtils.sortJsonString("{\"@type\":\"JacksonUtilsTest$TestOfAnnotationSub\",\"date\":\"2021-07-14\",\"subField\":\"subField\"," 
+                        + "\"camelCase\":\"value\"}"), 
                 JacksonUtils.toJson(new TestOfAnnotationSub())
         );
     }
@@ -84,7 +80,7 @@ public class JacksonUtilsTest {
         Assert.assertArrayEquals("\"string\"".getBytes(), JacksonUtils.toJsonBytes("string"));
         Assert.assertArrayEquals("30".getBytes(), JacksonUtils.toJsonBytes(new BigDecimal(30)));
         Assert.assertArrayEquals(
-                "{\"key\":\"value\"}".getBytes(),
+                JacksonUtils.sortJsonString("{\"key\":\"value\"}").getBytes(),
                 JacksonUtils.toJsonBytes(Collections.singletonMap("key", "value"))
         );
         Assert.assertArrayEquals(
@@ -92,7 +88,7 @@ public class JacksonUtilsTest {
                 JacksonUtils.toJsonBytes(Collections.singletonList(Collections.singletonMap("key", "value")))
         );
         Assert.assertArrayEquals(
-                "{\"aLong\":0,\"aInteger\":1,\"aBoolean\":false}".getBytes(),
+                JacksonUtils.sortJsonString("{\"aLong\":0,\"aInteger\":1,\"aBoolean\":false}").getBytes(),
                 JacksonUtils.toJsonBytes(new TestOfAtomicObject())
         );
         Assert.assertArrayEquals("{\"date\":1626192000000}".getBytes(), JacksonUtils.toJsonBytes(new TestOfDate()));
@@ -103,12 +99,12 @@ public class JacksonUtilsTest {
         );
         // getter is also recognized
         Assert.assertArrayEquals(
-                "{\"value\":\"value\",\"key\":\"key\"}".getBytes(),
+                JacksonUtils.sortJsonString("{\"value\":\"value\",\"key\":\"key\"}").getBytes(),
                 JacksonUtils.toJsonBytes(new TestOfGetter())
         );
         // annotation available
         Assert.assertArrayEquals(
-                ("{\"@type\":\"JacksonUtilsTest$TestOfAnnotationSub\",\"date\":\"2021-07-14\",\"subField\":\"subField\"," 
+                JacksonUtils.sortJsonString("{\"@type\":\"JacksonUtilsTest$TestOfAnnotationSub\",\"date\":\"2021-07-14\",\"subField\":\"subField\"," 
                         + "\"camelCase\":\"value\"}").getBytes(), 
                 JacksonUtils.toJsonBytes(new TestOfAnnotationSub())
         );
@@ -430,48 +426,6 @@ public class JacksonUtilsTest {
     public void testConstructJavaType() {
         Assert.assertEquals("java.lang.String", JacksonUtils.constructJavaType(String.class).getRawClass().getName());
         Assert.assertTrue(JacksonUtils.constructJavaType(String.class).isFinal());
-    }
-
-    @Test
-    public void testToJsonBytes() {
-        Map<String, Object> map = new HashMap<String, Object>();
-        map.put("string", "你好，中国！");
-        map.put("integer", 999);
-        RestResult<Map<String, Object>> restResult = new RestResult();
-        restResult.setData(map);
-
-        byte[] bytes = JacksonUtils.toJsonBytes(restResult);
-        String jsonFromBytes = ByteUtils.toString(bytes);
-        String expectedJson = "{\"code\":0,\"data\":{\"string\":\"你好，中国！\",\"integer\":999}}";
-        Assert.assertEquals(expectedJson, jsonFromBytes);
-
-        // old `toJsonBytes` method implementation:
-        //     public static byte[] toJsonBytes(Object obj) {
-        //        try {
-        //            return ByteUtils.toBytes(mapper.writeValueAsString(obj));
-        //        } catch (JsonProcessingException e) {
-        //            throw new NacosSerializationException(obj.getClass(), e);
-        //        }
-        //    }
-
-        // here is a verification to compare with the old implementation
-        byte[] bytesFromOldImplementation = ByteUtils.toBytes(JacksonUtils.toJson(restResult));
-        Assert.assertEquals(expectedJson, new String(bytesFromOldImplementation, Charset.forName(Constants.ENCODE)));
-    }
-
-    @Test
-    public void testToObjFromBytes() {
-        String json = "{\"code\":0,\"data\":{\"string\":\"你好，中国！\",\"integer\":999}}";
-
-        RestResult<Map<String, Object>> restResult = JacksonUtils.toObj(json, RestResult.class);
-        Assert.assertEquals(0, restResult.getCode());
-        Assert.assertEquals("你好，中国！", restResult.getData().get("string"));
-        Assert.assertEquals(999, restResult.getData().get("integer"));
-
-        restResult = JacksonUtils.toObj(json, new TypeReference<RestResult<Map<String, Object>>>() { });
-        Assert.assertEquals(0, restResult.getCode());
-        Assert.assertEquals("你好，中国！", restResult.getData().get("string"));
-        Assert.assertEquals(999, restResult.getData().get("integer"));
     }
     
     static class TestOfAtomicObject {

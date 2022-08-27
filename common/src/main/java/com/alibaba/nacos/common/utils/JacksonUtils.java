@@ -32,6 +32,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.InputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Json utils implement by Jackson.
@@ -46,6 +50,26 @@ public final class JacksonUtils {
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         mapper.setSerializationInclusion(Include.NON_NULL);
     }
+
+    /**
+     * Sort Json String to alphabetical order to avoid underterminism.
+     * 
+     * @param jsonString input unsorted Json String
+     * @return sorted Json String
+     */
+    public static String sortJsonString(String jsonString) {
+        String result = "";
+        final String start = "{";
+        final String end = "}";
+        if (!(jsonString.startsWith(start) && jsonString.endsWith(end))) {
+            return jsonString;
+        }
+        String body = jsonString.substring(1, jsonString.length() - 1);
+        List<String> elementList = new ArrayList<>(Arrays.asList(body.split(",")));
+        Collections.sort(elementList);
+        result = start + String.join(",", elementList) + end;
+        return result;
+    }
     
     /**
      * Object to json string.
@@ -56,7 +80,8 @@ public final class JacksonUtils {
      */
     public static String toJson(Object obj) {
         try {
-            return mapper.writeValueAsString(obj);
+            String result = mapper.writeValueAsString(obj);
+            return sortJsonString(result);
         } catch (JsonProcessingException e) {
             throw new NacosSerializationException(obj.getClass(), e);
         }
@@ -71,7 +96,8 @@ public final class JacksonUtils {
      */
     public static byte[] toJsonBytes(Object obj) {
         try {
-            return mapper.writeValueAsBytes(obj);
+            String result = mapper.writeValueAsString(obj);
+            return ByteUtils.toBytes(sortJsonString(result));
         } catch (JsonProcessingException e) {
             throw new NacosSerializationException(obj.getClass(), e);
         }
@@ -88,7 +114,7 @@ public final class JacksonUtils {
      */
     public static <T> T toObj(byte[] json, Class<T> cls) {
         try {
-            return mapper.readValue(json, cls);
+            return toObj(StringUtils.newStringForUtf8(json), cls);
         } catch (Exception e) {
             throw new NacosDeserializationException(cls, e);
         }
@@ -105,7 +131,7 @@ public final class JacksonUtils {
      */
     public static <T> T toObj(byte[] json, Type cls) {
         try {
-            return mapper.readValue(json, mapper.constructType(cls));
+            return toObj(StringUtils.newStringForUtf8(json), cls);
         } catch (Exception e) {
             throw new NacosDeserializationException(e);
         }
@@ -139,7 +165,7 @@ public final class JacksonUtils {
      */
     public static <T> T toObj(byte[] json, TypeReference<T> typeReference) {
         try {
-            return mapper.readValue(json, typeReference);
+            return toObj(StringUtils.newStringForUtf8(json), typeReference);
         } catch (Exception e) {
             throw new NacosDeserializationException(e);
         }
