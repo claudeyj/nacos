@@ -36,7 +36,7 @@ import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -434,7 +434,7 @@ public class JacksonUtilsTest {
 
     @Test
     public void testToJsonBytes() {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
         map.put("string", "你好，中国！");
         map.put("integer", 999);
         RestResult<Map<String, Object>> restResult = new RestResult();
@@ -443,7 +443,7 @@ public class JacksonUtilsTest {
         byte[] bytes = JacksonUtils.toJsonBytes(restResult);
         String jsonFromBytes = ByteUtils.toString(bytes);
         String expectedJson = "{\"code\":0,\"data\":{\"string\":\"你好，中国！\",\"integer\":999}}";
-        Assert.assertEquals(expectedJson, jsonFromBytes);
+        Assert.assertEquals(JacksonUtils.sortJsonString(expectedJson), jsonFromBytes);
 
         // old `toJsonBytes` method implementation:
         //     public static byte[] toJsonBytes(Object obj) {
