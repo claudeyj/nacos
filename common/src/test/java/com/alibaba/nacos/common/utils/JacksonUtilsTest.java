@@ -56,18 +56,18 @@ public class JacksonUtilsTest {
                 JacksonUtils.toJson(Collections.singletonList(Collections.singletonMap("key", "value")))
         );
         Assert.assertEquals(
-                "{\"aLong\":0,\"aInteger\":1,\"aBoolean\":false}",
+                JacksonUtils.sortJsonString("{\"aLong\":0,\"aInteger\":1,\"aBoolean\":false}"),
                 JacksonUtils.toJson(new TestOfAtomicObject())
         );
         Assert.assertEquals("{\"date\":1626192000000}", JacksonUtils.toJson(new TestOfDate()));
         // only public
         Assert.assertEquals("{\"publicAccessModifier\":\"public\"}", JacksonUtils.toJson(new TestOfAccessModifier()));
         // getter is also recognized
-        Assert.assertEquals("{\"value\":\"value\",\"key\":\"key\"}", JacksonUtils.toJson(new TestOfGetter()));
+        Assert.assertEquals(JacksonUtils.sortJsonString("{\"value\":\"value\",\"key\":\"key\"}"), JacksonUtils.toJson(new TestOfGetter()));
         // annotation available
         Assert.assertEquals(
-                "{\"@type\":\"JacksonUtilsTest$TestOfAnnotationSub\",\"date\":\"2021-07-14\",\"subField\":\"subField\"," 
-                        + "\"camelCase\":\"value\"}", 
+                JacksonUtils.sortJsonString("{\"@type\":\"JacksonUtilsTest$TestOfAnnotationSub\",\"date\":\"2021-07-14\",\"subField\":\"subField\"," 
+                        + "\"camelCase\":\"value\"}"), 
                 JacksonUtils.toJson(new TestOfAnnotationSub())
         );
     }
@@ -92,7 +92,7 @@ public class JacksonUtilsTest {
                 JacksonUtils.toJsonBytes(Collections.singletonList(Collections.singletonMap("key", "value")))
         );
         Assert.assertArrayEquals(
-                "{\"aLong\":0,\"aInteger\":1,\"aBoolean\":false}".getBytes(),
+                JacksonUtils.sortJsonString("{\"aLong\":0,\"aInteger\":1,\"aBoolean\":false}").getBytes(),
                 JacksonUtils.toJsonBytes(new TestOfAtomicObject())
         );
         Assert.assertArrayEquals("{\"date\":1626192000000}".getBytes(), JacksonUtils.toJsonBytes(new TestOfDate()));
@@ -103,12 +103,12 @@ public class JacksonUtilsTest {
         );
         // getter is also recognized
         Assert.assertArrayEquals(
-                "{\"value\":\"value\",\"key\":\"key\"}".getBytes(),
+                JacksonUtils.sortJsonString("{\"value\":\"value\",\"key\":\"key\"}").getBytes(),
                 JacksonUtils.toJsonBytes(new TestOfGetter())
         );
         // annotation available
         Assert.assertArrayEquals(
-                ("{\"@type\":\"JacksonUtilsTest$TestOfAnnotationSub\",\"date\":\"2021-07-14\",\"subField\":\"subField\"," 
+                JacksonUtils.sortJsonString("{\"@type\":\"JacksonUtilsTest$TestOfAnnotationSub\",\"date\":\"2021-07-14\",\"subField\":\"subField\"," 
                         + "\"camelCase\":\"value\"}").getBytes(), 
                 JacksonUtils.toJsonBytes(new TestOfAnnotationSub())
         );
